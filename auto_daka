@@ -49,9 +49,9 @@ code_image.save('./code_image.png')
 print("验证码截取成功！")
 
 #调取百度文字识别的API，对截取的图片进行识别，并将计算结果输入进去
-APP_ID = '23968112'
-API_KEY = 'PBapGk7OGKjepiiuW7I0DBXr'
-SECRET_KEY = 'trI8UrKifcoh61j3b6tkhrQ330YzXiWG'
+APP_ID = '******' #注册百度云文字识别API
+API_KEY = '******'
+SECRET_KEY = '******'
 client = AipOcr(APP_ID, API_KEY, SECRET_KEY)
 i = open('./code_image.png', 'rb')
 img = i.read()
