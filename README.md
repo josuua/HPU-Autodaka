@@ -8,3 +8,5 @@
 2. 注册文字识别API，选择通用文字（高精度版本），切记是高精度版本，因为代码里调用的是高精度版本，这个一天可以免费检测500次，绝对够用。（https://cloud.baidu.com/product/ocr_general）<br>
 3. 服务器的使用方法不在多说，网上一大堆。但是需要安装pip3，git，chrome，chromedriver，selenium，pillow，baidu-aip等环境<br>
 4. 将文件git到服务器上，然后将代码中的账号和密码改为自己的，代码中的APP_ID，API_KEY，SECRET_KEY改为自己注册的信息，然后配置自动执行文件
+# 更新
+可以加周围同学的学号，格式已经放到user_info.json文件中。
