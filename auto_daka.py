@@ -27,8 +27,8 @@ def auoto_daka(username, password):
     browser.save_screenshot('./save_screenshot.png')  # 截取理工大统一认证平台界面，方便后面得到验证码
 
     # 输入账号和密码
-    browser.find_element_by_id("username").send_keys(username)  # 将此处的"账号"改为自己的账号"2110********"
-    browser.find_element_by_id("password").send_keys(password)  # 密码同理
+    browser.find_element_by_id("username").send_keys(username)  
+    browser.find_element_by_id("password").send_keys(password)  
     print("账号密码输入成功！")
     # 截取验证码
     captcha_image = browser.find_element_by_xpath('//*[@id="login-form"]/div[2]/div[4]/img')
