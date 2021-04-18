@@ -1,99 +1,135 @@
-#! /usr/bin/python3.6
-# coding:utf-8
 import time
-from time import sleep
-from aip import AipOcr
-from selenium import webdriver
-from PIL import Image
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
 import json
+import requests
+from selenium import webdriver
+
+from selenium.webdriver.support.wait import WebDriverWait
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 
 
-def auoto_daka(username, password):
-    print("-------------------------------------")
-    print("用户 %s 开始打卡！" % username)
-    t = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-    str1 = '执行时间： ' + t + '\n'
-    print(str1)
+def printLog(info_type="", title="", info=""):
+    """
+    打印日志
+    :param info_type: 日志的等级
+    :param title: 日志的标题
+    :param info: 日志的信息
+    :return:
+    """
+    now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    log = now + "  " + info_type + "  " + title + "  " + info
+    if info_type == "ERROR":
+        print("\033[0;31m" + log + "\033[0m\n")
+    elif info_type == "INFO":
+        print(log)
+    else:
+        print(log)
+        return
+    with open("task.log", "a", encoding="utf-8") as log_a_file_io:
+        log_a_file_io.write(log + "\n")
 
-    # 进入chrome的无头模式，方便部署服务器上使用
-    chrome_options = Options()
-    chrome_options.add_argument('--headless')
 
-    browser = webdriver.Chrome(chrome_options=chrome_options)
-    browser.get("https://ehall.hpu.edu.cn/infoplus/form/XSMRJKSB/start")  # 进入打卡界面，需要登陆理工大统一认证平台
-    sleep(1)
-    browser.save_screenshot('./save_screenshot.png')  # 截取理工大统一认证平台界面，方便后面得到验证码
+def calc(img_base64: str):
+    """
+    根据传入的图片计算值并返回
+    :param img_base64: 图像数据，base64编码后进行urlencode，需去掉编码头（data:image/jpeg;base64,)
+    :return: int: 计算后的数值
+    """
+    # 请求`access_token`
+    oauth_url = "https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=" + API_Key + \
+                "&client_secret=" + Secret_Key
+    token = requests.get(oauth_url).json()['access_token']
 
-    # 输入账号和密码
-    browser.find_element_by_id("username").send_keys(username)  
-    browser.find_element_by_id("password").send_keys(password)  
-    print("账号密码输入成功！")
-    # 截取验证码
-    captcha_image = browser.find_element_by_xpath('//*[@id="login-form"]/div[2]/div[4]/img')
-    left = captcha_image.location['x']
-    top = captcha_image.location['y']
-    right = left + captcha_image.size['width']
-    bottom = top + captcha_image.size['height']
-    image = Image.open('./save_screenshot.png')
-    code_image = image.crop((left, top, right, bottom))
-    code_image.save('./code_image.png')
-    '''这里写了两个截取验证码的方法，是因为在测试和部署到服务器后，验证码的位置可能不太一样，
-       上面是部署在服务器上的截取方法，下面是测试时候的截取方法
-    left = 2 * captcha_image.location['x']
-    top = 2 * captcha_image.location['y']
-    right = left + 2 * captcha_image.size['width'] - 10
-    bottom = top + 2 * captcha_image.size['height'] - 10
-    image = Image.open('./save_screenshot.png')
-    code_image=image.crop((left,top,right,bottom))
-    code_image.save('./code_image.png')
-    '''
-    print("验证码截取成功！")
-    # 调取百度文字识别的API，对截取的图片进行识别，并将计算结果输入进去
-    APP_ID = '23968112'
-    API_KEY = 'PBapGk7OGKjepiiuW7I0DBXr'
-    SECRET_KEY = 'trI8UrKifcoh61j3b6tkhrQ330YzXiWG'
-    client = AipOcr(APP_ID, API_KEY, SECRET_KEY)
-    i = open('./code_image.png', 'rb')
-    img = i.read()
-    message = client.basicAccurate(img)
-    text = message.get('words_result')
-    #print(text)
-    print(text[0].get('words'))
-    text1 = str(text[0].get('words'))
-    captcha_result = int(text1[0]) + int(text1[2])
-    browser.find_element_by_id("captcha").send_keys(captcha_result)
-    sleep(3)
-    browser.find_element_by_id("login-submit").send_keys(Keys.ENTER)
-    sleep(2)
-    print("跳转成功")
-    browser.maximize_window()
+    # 通用文字识别 如果你觉得识别错误率比较高，请将下面一行注释掉，将高精度识别的注释打开
+    api_url = "https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic" + "?access_token=" + str(token)
+    # 高精度识别
+    # api_url = "https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic" + "?access_token=" + str(token)
 
-    sleep(5)  # 等待内容加载时间
+    header = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    data = {
+        'image': str(img_base64)
+    }
+    # response like {'words_result': [{'words': '1+5=?'}], 'log_id': 1383448933996429312, 'words_result_num': 1}
+    return eval(requests.post(api_url, headers=header, data=data).json()['words_result'][0]['words'][0:3])
 
-    browser.find_element_by_link_text("提交").click()
-    sleep(3:wq
-    )
-    print("点击提交按钮，等待弹窗出现...")
 
-    browser.find_element_by_class_name("dialog_button.default.fr").click()
-    sleep(3)
-    browser.find_element_by_class_name("dialog_button.default.fr").click()  # 奈何理工大提交弹窗太多了
-    sleep(6)
-    browser.quit()
-    print("用户 %s 打卡完毕！" % username)
-    print("-------------------------------------")
-    sleep(10)
+def task(username, password):
+    """
+    :param username: 学号
+    :param password: 密码
+    :return:
+    """
+    try:
+        browser.get("https://ehall.hpu.edu.cn/")
+        browser.find_element_by_xpath('//*[@id="username"]').clear()
+        browser.find_element_by_xpath('//*[@id="username"]').send_keys(str(username))
+        browser.find_element_by_xpath('//*[@id="password"]').clear()
+        browser.find_element_by_xpath('//*[@id="password"]').send_keys(str(password))
+        # 获取验证码
+        verify_code = \
+            browser.find_element_by_xpath('//*[@id="login-form"]/div[2]/div[4]/img').get_attribute("src").split(",")[
+                -1].replace("%0A", '\n')
+        browser.find_element_by_xpath('//*[@id="captcha"]').clear()
+        browser.find_element_by_xpath('//*[@id="captcha"]').send_keys(str(calc(verify_code)))
+        browser.find_element_by_xpath('//*[@id="login-submit"]').click()
+        # 访问页面
+        browser.get("https://ehall.hpu.edu.cn/infoplus/form/XSMRJKSB/start")
+        # TODO：在这可以补充填写详细信息的代码
+        # 这里就直接提交了，如果你原来提交过的话，会有缓存的
+        # 等待异步加载
+        wait.until(EC.presence_of_element_located((By.XPATH, '//*[@class="btn_group"]/li[1]'))).click()
+        wait.until(EC.presence_of_element_located(
+            (By.XPATH, '//*[contains(@class, "dialog_button") and contains(@class, "default")]'))).click()
+        wait.until(EC.presence_of_element_located(
+            (By.XPATH, '//*[contains(@class, "dialog_button") and contains(@class, "default")]'))).click()
+        if SCREENSHOT:
+            browser.save_screenshot(
+                './screenshot/' + str(username) + time.strftime("%m_%d_%H_%M_%S", time.localtime()) + ".png")
+        # 输出日志
+        printLog("INFO", str(username) + "提交成功")
+        # 注销
+        browser.get("https://ehall.hpu.edu.cn/taskcenter/logout")
+        return True
+
+    except Exception as e:
+        # 输出日志
+        printLog("ERROR", str(username) + "提交错误", str(e.args))
+        browser.get("https://ehall.hpu.edu.cn/taskcenter/logout")
+        return False
 
 
 if __name__ == '__main__':
-    with open('user_info.json', 'r') as f:
-        list1 = []
-        list2 = []
-        data = json.load(f)
-        for key, value in data.items():
-            list1.append(key)
-            list2.append(value)
-    for i in range(len(list1)):
-        auoto_daka(list1[i], list2[i])
+    # 是否完成后截图
+    SCREENSHOT = True
+
+    # 获取API_Key、Secret_Key、用户信息
+    with open('config.json', "r") as f:
+        CONFIG = json.load(f)
+        API_Key = CONFIG['API_Key']
+        Secret_Key = CONFIG['Secret_Key']
+        users = CONFIG['userInfo']
+
+    chrome_options = webdriver.ChromeOptions()
+
+    # 无头模式
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--disable-gpu')
+    chrome_options.add_argument("--window-size=1920,1050")
+
+    # 如果你是其它的系统请修改下面一行
+    # mac like this：
+    # browser = webdriver.Chrome(executable_path="drivers/chromedriver", options=chrome_options)
+    # windows like this：
+    browser = webdriver.Chrome(executable_path="drivers/chromedriver.exe", options=chrome_options)
+
+    # 设置等待时间
+    wait = WebDriverWait(browser, 5)
+
+    # 依次完成任务
+    for user in users:
+        task(username=user['id'], password=user['pw'])
+
+    browser.close()
