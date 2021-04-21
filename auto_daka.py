@@ -127,7 +127,6 @@ if __name__ == '__main__':
 
     # 设置等待时间
     wait = WebDriverWait(browser, 5)
-
     # 依次完成任务
     for user in users:
         task(username=user['id'], password=user['pw'])
